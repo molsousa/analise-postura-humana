@@ -1,0 +1,47 @@
+{
+  "nome_exercicio": "pushup",
+  "regra_fase": {
+    "angulo": "angulo_cotovelo_dir",
+    "limiar_descendente": 110,
+    "limiar_ascendente": 150
+  },
+  "regras_validacao": [
+    {
+      "descricao": "Verifica se o corpo está alinhado durante o movimento.",
+      "angulo": "angulo_alinhamento_corpo",
+      "limite": [155, 180],
+      "feedback": "MANTENHA O CORPO ALINHADO",
+      "landmarks_associados": ["right_shoulder", "right_hip", "right_ankle"]
+    },
+    {
+      "descricao": "Verifica se as costas não estão arqueadas (quadril muito baixo).",
+      "angulo": "angulo_quadril_dir",
+      "limite": [160, 190],
+      "feedback": "EVITE ARQUEAR AS COSTAS",
+      "landmarks_associados": ["right_shoulder", "right_hip", "right_knee"]
+    },
+    {
+      "descricao": "Verifica a profundidade na fase descendente.",
+      "fase": "descendente",
+      "angulo": "angulo_cotovelo_dir",
+      "limite": [0, 100],
+      "feedback": "DESCA MAIS",
+      "landmarks_associados": ["right_shoulder", "right_elbow", "right_wrist"]
+    },
+    {
+      "descricao": "Verifica a extensão completa na fase ascendente.",
+      "fase": "ascendente",
+      "angulo": "angulo_cotovelo_dir",
+      "limite": [160, 190],
+      "feedback": "ESTENDA MAIS OS BRACOS",
+      "landmarks_associados": ["right_shoulder", "right_elbow", "right_wrist"]
+    },
+    {
+      "descricao": "Verifica a simetria dos ombros.",
+      "angulo": "simetria_ombros",
+      "limite": [0, 25],
+      "feedback": "NIVELE OS OMBROS",
+      "landmarks_associados": ["left_shoulder", "right_shoulder"]
+    }
+  ]
+}

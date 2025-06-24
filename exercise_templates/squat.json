@@ -1,0 +1,40 @@
+{
+  "nome_exercicio": "squat",
+  "regra_fase": {
+    "angulo": "angulo_joelho_dir",
+    "limiar_descendente": 110,
+    "limiar_ascendente": 160
+  },
+  "regras_validacao": [
+    {
+      "descricao": "Verifica se as costas permanecem retas.",
+      "angulo": "angulo_quadril_dir",
+      "limite": [70, 110],
+      "feedback": "MANTENHA AS COSTAS RETAS",
+      "landmarks_associados": ["right_shoulder", "right_hip", "right_knee"]
+    },
+    {
+      "descricao": "Verifica a profundidade do agachamento na fase descendente.",
+      "fase": "descendente",
+      "angulo": "angulo_joelho_dir",
+      "limite": [0, 95],
+      "feedback": "AGACHE MAIS FUNDO",
+      "landmarks_associados": ["right_hip", "right_knee", "right_ankle"]
+    },
+    {
+        "descricao": "Verifica a extensão completa na fase ascendente.",
+        "fase": "ascendente",
+        "angulo": "angulo_joelho_dir",
+        "limite": [165, 190],
+        "feedback": "ESTENDA AS PERNAS COMPLETAMENTE",
+        "landmarks_associados": ["right_hip", "right_knee", "right_ankle"]
+    },
+    {
+        "descricao": "Verifica a simetria dos quadris.",
+        "angulo": "simetria_quadris",
+        "limite": [0, 25],
+        "feedback": "NIVELE O QUADRIL",
+        "landmarks_associados": ["left_hip", "right_hip"]
+    }
+  ]
+}
