@@ -1,47 +1,26 @@
 {
-  "nome_exercicio": "pushup",
-  "regra_fase": {
-    "angulo": "angulo_cotovelo_dir",
-    "limiar_descendente": 110,
-    "limiar_ascendente": 150
+  "name": "Flexao de Braco",
+  "main_angle": "right_elbow_angle",
+  "angle_definitions": {
+    "right_elbow_angle": ["RIGHT_SHOULDER", "RIGHT_ELBOW", "RIGHT_WRIST"],
+    "left_elbow_angle": ["LEFT_SHOULDER", "LEFT_ELBOW", "LEFT_WRIST"],
+    "body_line_angle": ["RIGHT_SHOULDER", "RIGHT_HIP", "RIGHT_ANKLE"]
   },
-  "regras_validacao": [
-    {
-      "descricao": "Verifica se o corpo está alinhado durante o movimento.",
-      "angulo": "angulo_alinhamento_corpo",
-      "limite": [155, 180],
-      "feedback": "MANTENHA O CORPO ALINHADO",
-      "landmarks_associados": ["right_shoulder", "right_hip", "right_ankle"]
+  "rules": {
+    "state_change": {
+      "up_angle": 160,
+      "down_angle": 90
     },
-    {
-      "descricao": "Verifica se as costas não estão arqueadas (quadril muito baixo).",
-      "angulo": "angulo_quadril_dir",
-      "limite": [160, 190],
-      "feedback": "EVITE ARQUEAR AS COSTAS",
-      "landmarks_associados": ["right_shoulder", "right_hip", "right_knee"]
-    },
-    {
-      "descricao": "Verifica a profundidade na fase descendente.",
-      "fase": "descendente",
-      "angulo": "angulo_cotovelo_dir",
-      "limite": [0, 100],
-      "feedback": "DESCA MAIS",
-      "landmarks_associados": ["right_shoulder", "right_elbow", "right_wrist"]
-    },
-    {
-      "descricao": "Verifica a extensão completa na fase ascendente.",
-      "fase": "ascendente",
-      "angulo": "angulo_cotovelo_dir",
-      "limite": [160, 190],
-      "feedback": "ESTENDA MAIS OS BRACOS",
-      "landmarks_associados": ["right_shoulder", "right_elbow", "right_wrist"]
-    },
-    {
-      "descricao": "Verifica a simetria dos ombros.",
-      "angulo": "simetria_ombros",
-      "limite": [0, 25],
-      "feedback": "NIVELE OS OMBROS",
-      "landmarks_associados": ["left_shoulder", "right_shoulder"]
-    }
-  ]
+    "feedback": [
+      {
+        "angle": "body_line_angle",
+        "message": "Mantenha o corpo reto!",
+        "apply_when": "both",
+        "zones": {
+          "verde": { "min": 160, "max": 180 },
+          "amarela": { "min": 150, "max": 159.9 }
+        }
+      }
+    ]
+  }
 }

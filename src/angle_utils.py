@@ -1,60 +1,44 @@
-import math
+import numpy as np
 
-def calcular_angulo(ponto_a, ponto_b, ponto_c):
+def calculate_angle_3d(keypoints, p1_idx, p2_idx, p3_idx):
     """
-    Calcula o ângulo (em graus) formado por três pontos, onde ponto_b é o vértice.
-
-    O cálculo é baseado no produto escalar dos vetores BA e BC. O resultado é
-    sempre um ângulo positivo entre 0 e 180 graus.
+    Calcula o ângulo entre três keypoints 3D (p2 é o vértice).
 
     Args:
-        ponto_a (tuple): Coordenadas (x, y) do primeiro ponto.
-        ponto_b (tuple): Coordenadas (x, y) do ponto do vértice.
-        ponto_c (tuple): Coordenadas (x, y) do terceiro ponto.
+        keypoints (list): Lista de keypoints, onde cada keypoint é uma tupla (x, y, z, visibilidade).
+        p1_idx (int): Índice do primeiro ponto.
+        p2_idx (int): Índice do ponto do vértice (onde o ângulo é medido).
+        p3_idx (int): Índice do terceiro ponto.
 
     Returns:
-        float: O ângulo calculado em graus. Retorna 0.0 se algum dos vetores
-               tiver comprimento zero para evitar divisão por zero.
+        float: O ângulo em graus, ou 0 se os pontos não puderem ser calculados.
     """
-    # Coordenadas dos pontos
-    ax, ay = ponto_a
-    bx, by = ponto_b
-    cx, cy = ponto_c
-
-    # Vetores BA e BC
-    vetor_ba = (ax - bx, ay - by)
-    vetor_bc = (cx - bx, cy - by)
-
-    # Produto escalar dos vetores
-    produto_escalar = vetor_ba[0] * vetor_bc[0] + vetor_ba[1] * vetor_bc[1]
-
-    # Magnitude (comprimento) dos vetores
-    mag_ba = math.sqrt(vetor_ba[0]**2 + vetor_ba[1]**2)
-    mag_bc = math.sqrt(vetor_bc[0]**2 + vetor_bc[1]**2)
-
-    # Evita divisão por zero
-    if mag_ba == 0 or mag_bc == 0:
+    if not keypoints or max(p1_idx, p2_idx, p3_idx) >= len(keypoints):
         return 0.0
 
-    # Garante que o valor do cosseno esteja em [-1, 1] para evitar erros no acos
-    cos_angulo = max(min(produto_escalar / (mag_ba * mag_bc), 1.0), -1.0)
+    # Extrai as coordenadas 3D dos pontos
+    p1 = np.array(keypoints[p1_idx][:3])
+    p2 = np.array(keypoints[p2_idx][:3])
+    p3 = np.array(keypoints[p3_idx][:3])
+
+    # Cria os vetores a partir dos pontos
+    v1 = p1 - p2
+    v2 = p3 - p2
     
-    # Converte o ângulo de radianos para graus
-    angulo_rad = math.acos(cos_angulo)
-    angulo_graus = math.degrees(angulo_rad)
-
-    return angulo_graus
-
-def angulo_no_intervalo(angulo, min_val, max_val):
-    """
-    Verifica se um ângulo está dentro de um intervalo [min_val, max_val].
-
-    Args:
-        angulo (float): O ângulo a ser verificado.
-        min_val (float): O valor mínimo do intervalo.
-        max_val (float): O valor máximo do intervalo.
-
-    Returns:
-        bool: True se o ângulo estiver no intervalo, False caso contrário.
-    """
-    return min_val <= angulo <= max_val
+    # Calcula o produto escalar
+    dot_product = np.dot(v1, v2)
+    
+    # Calcula a magnitude (norma) dos vetores
+    norm_v1 = np.linalg.norm(v1)
+    norm_v2 = np.linalg.norm(v2)
+    
+    # Evita divisão por zero
+    if norm_v1 == 0 or norm_v2 == 0:
+        return 0.0
+        
+    # Calcula o cosseno do ângulo e o converte para graus
+    cosine_angle = dot_product / (norm_v1 * norm_v2)
+    # Limita o valor entre -1 e 1 para evitar erros de domínio no arccos
+    angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
+    
+    return np.degrees(angle)

@@ -1,1 +1,1 @@
-# YOLO-analise-postura-humana
+# MEDIAPIPE-analise-pose-humana

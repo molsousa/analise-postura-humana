@@ -1,40 +1,36 @@
 {
-  "nome_exercicio": "squat",
-  "regra_fase": {
-    "angulo": "angulo_joelho_dir",
-    "limiar_descendente": 110,
-    "limiar_ascendente": 160
+  "name": "Agachamento",
+  "main_angle": "right_knee_flexion",
+  "angle_definitions": {
+    "right_knee_flexion": ["RIGHT_HIP", "RIGHT_KNEE", "RIGHT_ANKLE"],
+    "left_knee_flexion": ["LEFT_HIP", "LEFT_KNEE", "LEFT_ANKLE"],
+    "right_ankle_dorsiflexion": ["RIGHT_KNEE", "RIGHT_ANKLE", "RIGHT_FOOT_INDEX"],
+    "left_ankle_dorsiflexion": ["LEFT_KNEE", "LEFT_ANKLE", "LEFT_FOOT_INDEX"]
   },
-  "regras_validacao": [
-    {
-      "descricao": "Verifica se as costas permanecem retas.",
-      "angulo": "angulo_quadril_dir",
-      "limite": [70, 110],
-      "feedback": "MANTENHA AS COSTAS RETAS",
-      "landmarks_associados": ["right_shoulder", "right_hip", "right_knee"]
+  "rules": {
+    "state_change": {
+      "down_angle": 110,
+      "up_angle": 160
     },
-    {
-      "descricao": "Verifica a profundidade do agachamento na fase descendente.",
-      "fase": "descendente",
-      "angulo": "angulo_joelho_dir",
-      "limite": [0, 95],
-      "feedback": "AGACHE MAIS FUNDO",
-      "landmarks_associados": ["right_hip", "right_knee", "right_ankle"]
-    },
-    {
-        "descricao": "Verifica a extensão completa na fase ascendente.",
-        "fase": "ascendente",
-        "angulo": "angulo_joelho_dir",
-        "limite": [165, 190],
-        "feedback": "ESTENDA AS PERNAS COMPLETAMENTE",
-        "landmarks_associados": ["right_hip", "right_knee", "right_ankle"]
-    },
-    {
-        "descricao": "Verifica a simetria dos quadris.",
-        "angulo": "simetria_quadris",
-        "limite": [0, 25],
-        "feedback": "NIVELE O QUADRIL",
-        "landmarks_associados": ["left_hip", "right_hip"]
-    }
-  ]
+    "feedback": [
+      {
+        "angle": "right_knee_flexion",
+        "message": "Profundidade insuficiente. Agache ate a coxa ficar paralela ao chao.",
+        "apply_when": "down",
+        "zones": {
+          "verde": { "min": 110, "max": 150 },
+          "amarela": { "min": 90, "max": 109.9 }
+        }
+      },
+      {
+        "angle": "right_ankle_dorsiflexion",
+        "message": "Mobilidade de tornozelo limitada. Mantenha os calcanhares no chao.",
+        "apply_when": "down",
+        "zones": {
+          "verde": { "min": 30, "max": 90 },
+          "amarela": { "min": 20, "max": 29.9 }
+        }
+      }
+    ]
+  }
 }
