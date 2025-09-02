@@ -22,21 +22,23 @@ class PostureAnalyzer:
                 raise ValueError(f"Nome de articulação inválido para o ângulo '{angle_name}'")
             self.angle_definitions.append({'name': angle_name, 'indices': indices})
 
-        # --- LÓGICA DE CONTAGEM DE REPETIÇÕES (INDEPENDENTE) ---
-        self.rep_state = "up"  # Pode ser 'up' ou 'down'
+        # --- LÓGICA DE CONTAGEM DE REPETIÇÕES ---
+        self.rep_state = "up"
         self.counter = 0
+        self.qualidade_da_rep_atual = True
+        self.erros_na_rep_atual = set() # Armazena os erros da rep atual
 
-        # --- LÓGICA DE FEEDBACK (POSTURA + REPETIÇÃO TEMPORÁRIA) ---
+        # --- LÓGICA DE FEEDBACK ---
         self.feedback = "Inicie o exercicio."
         self.feedback_type = "INFO"
-        self.rep_complete_feedback_end_time = 0  # Timestamp para esconder a msg "Repetição X!"
+        self.rep_complete_feedback_end_time = 0
 
     def _get_keypoint_visibility(self, keypoints, indices):
         if not keypoints: return 0.0
         visibilities = [keypoints[i][3] for i in indices if i < len(keypoints)]
         return sum(visibilities) / len(visibilities) if visibilities else 0.0
 
-    def analyze(self, keypoints, image_shape):
+    def analyze(self, keypoints, image_shape, reporter):
         if not keypoints:
             self.feedback = "Nenhuma pessoa detectada."
             self.feedback_type = "ERRO_CRITICO"
@@ -51,16 +53,15 @@ class PostureAnalyzer:
             angles[name] = calculate_angle_3d(keypoints, p1_idx, p2_idx, p3_idx)
             visibilities[name] = self._get_keypoint_visibility(keypoints, indices)
 
-        # 1. Determina o ângulo principal baseado no lado mais visível
         main_angle_value, active_angle_name = self._get_active_main_angle(angles, visibilities)
-
-        # 2. Atualiza o contador de repetições (lógica agora é independente)
-        self._update_rep_counter(main_angle_value)
-        
-        # 3. Atualiza o feedback de postura em tempo real
         posture_feedback, posture_type = self._get_posture_feedback(angles, visibilities, active_angle_name)
+        
+        if self.rep_state == 'down' and posture_type in ['ATENCAO', 'ERRO_CRITICO']:
+            self.qualidade_da_rep_atual = False
+            self.erros_na_rep_atual.add(posture_feedback)
 
-        # 4. Decide qual feedback mostrar na tela
+        self._update_rep_counter(main_angle_value, reporter)
+        
         if time.time() < self.rep_complete_feedback_end_time:
             self.feedback = f"Repeticao {self.counter}!"
             self.feedback_type = "CORRETO"
@@ -71,7 +72,7 @@ class PostureAnalyzer:
         return angles
 
     def _get_active_main_angle(self, angles, visibilities):
-        """Identifica o ângulo principal (ex: cotovelo) do lado mais visível para a câmera."""
+        """Identifica o ângulo principal do lado mais visível para a câmera."""
         main_angle_base_name = self.config['main_angle']
         active_angle_name = main_angle_base_name
         
@@ -89,23 +90,25 @@ class PostureAnalyzer:
         
         return angles.get(active_angle_name), active_angle_name
 
-    def _update_rep_counter(self, main_angle_value):
-        """Máquina de estados simples e robusta que APENAS conta o movimento mecânico."""
+    def _update_rep_counter(self, main_angle_value, reporter):
+        """Máquina de estados que conta o movimento e chama o relatório ao final."""
         if main_angle_value is None:
             return
 
         up_threshold = self.rules['state_change']['up_angle']
         down_threshold = self.rules['state_change']['down_angle']
 
-        # Transição: UP -> DOWN
         if self.rep_state == 'up' and main_angle_value < down_threshold:
             self.rep_state = 'down'
-        
-        # Transição: DOWN -> UP (Conta a repetição)
+            self.qualidade_da_rep_atual = True
+            self.erros_na_rep_atual.clear()
+
         elif self.rep_state == 'down' and main_angle_value > up_threshold:
+            reporter.registrar_repeticao(self.qualidade_da_rep_atual, self.erros_na_rep_atual)
+            
             self.counter += 1
             self.rep_state = 'up'
-            self.rep_complete_feedback_end_time = time.time() + 2  # Mostra msg por 2 seg
+            self.rep_complete_feedback_end_time = time.time() + 2
 
     def _get_posture_feedback(self, angles, visibilities, active_angle_name):
         """Verifica todas as regras de postura e retorna o feedback apropriado."""
