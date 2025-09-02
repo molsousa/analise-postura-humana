@@ -1,12 +1,45 @@
 import cv2
 import argparse
-import numpy as np
 
 from src.posture_analysis import PostureAnalyzer
 from src.pose_detector import MediaPipePoseDetector
-from src.point_smoother import PointSmoother
+from src.kalman_smoother import KalmanPointSmoother
 from src.report import Relatorio
 from config import CONFIG_DESENHO
+import mediapipe as mp
+
+def draw_smoothed_landmarks(image, landmarks):
+    """Desenha os landmarks suavizados (uma lista de tuplas) na imagem."""
+    
+    # Obtém as conexões padrão do MediaPipe Pose
+    connections = mp.solutions.pose.POSE_CONNECTIONS
+    
+    # Converte os landmarks de coordenadas normalizadas para pixels
+    h, w, _ = image.shape
+    pixel_landmarks = []
+    for lm in landmarks:
+        # Ignora pontos com visibilidade muito baixa para não poluir a tela
+        if lm[3] > 0.1: # lm[3] é a visibilidade
+            pixel_landmarks.append((int(lm[0] * w), int(lm[1] * h)))
+        else:
+            # Adiciona um placeholder para manter os índices corretos
+            pixel_landmarks.append(None)
+
+    # Desenha as conexões
+    if connections:
+        for connection in connections:
+            start_idx = connection[0]
+            end_idx = connection[1]
+            if start_idx < len(pixel_landmarks) and end_idx < len(pixel_landmarks):
+                start_point = pixel_landmarks[start_idx]
+                end_point = pixel_landmarks[end_idx]
+                if start_point and end_point:
+                    cv2.line(image, start_point, end_point, (255, 255, 0), 2) # Cor Ciano
+
+    # Desenha os landmarks (pontos)
+    for point in pixel_landmarks:
+        if point:
+            cv2.circle(image, point, 5, (0, 0, 255), -1)
 
 def main(exercise_config, video_path=0):
     """
@@ -19,8 +52,9 @@ def main(exercise_config, video_path=0):
     # --- 1. Inicialização dos Componentes ---
     detector = MediaPipePoseDetector(model_complexity=1, min_detection_confidence=0.4)
     analyzer = PostureAnalyzer(exercise_config_path=exercise_config, pose_detector=detector)
-    # O PointSmoother (OneEuroFilter) é ideal para suavizar o jitter dos landmarks em tempo real.
-    smoother = PointSmoother(min_cutoff=1.0, beta=0.8, d_cutoff=1.0) 
+    
+    smoother = KalmanPointSmoother(visibility_threshold=0.65)
+    
     reporter = Relatorio()
 
     cap = cv2.VideoCapture(video_path)
@@ -38,56 +72,46 @@ def main(exercise_config, video_path=0):
             break
         
         # --- 2.1. Detecção de Pose ---
-        # Detecta os keypoints (landmarks) no frame atual. Retorna os pontos brutos e os resultados do MediaPipe.
         raw_keypoints, pose_landmarks_results = detector.detect_pose(frame)
         
-        # Prossegue apenas se uma pose for detectada.
         if raw_keypoints:
-            # --- 2.2. Suavização dos Keypoints ---
-            # Aplica o filtro One-Euro para reduzir o ruído e a instabilidade dos pontos detectados.
-            # Este filtro opera em 3D, preservando todas as informações espaciais.
+            # --- 2.2. Suavização e Predição dos Keypoints ---
+            # Aplica o filtro de Kalman para suavizar e estimar pontos ocluídos.
             smoothed_keypoints = smoother.smooth(raw_keypoints)
 
             # --- 2.3. Análise da Postura ---
-            # O analisador calcula os ângulos com base nos pontos suavizados e aplica as regras do PDF.
             image_shape = frame.shape[:2]
             calculated_angles = analyzer.analyze(smoothed_keypoints, image_shape)
 
             # --- 2.4. Geração de Relatório ---
-            # Adiciona os dados do frame atual (ângulos, feedback, etc.) ao relatório da sessão.
             if calculated_angles:
                 reporter.adicionar_dados(
                     exercicio=analyzer.exercise_name,
                     angulos=calculated_angles,
                     feedback_text=analyzer.feedback,
-                    feedback_type=analyzer.feedback_type # 'CORRETO', 'ATENCAO', 'ERRO'
+                    feedback_type=analyzer.feedback_type
                 )
         else:
-            # Se nenhum keypoint for detectado, reseta a análise.
             analyzer.analyze([], None)
 
         # --- 3. Visualização dos Resultados ---
-        # Desenha os landmarks e conexões da pose no frame.
-        detector.draw_landmarks(frame, pose_landmarks_results)
         
-        # Define a cor do texto de feedback com base na correção da postura.
+        if 'smoothed_keypoints' in locals() and smoothed_keypoints:
+             draw_smoothed_landmarks(frame, smoothed_keypoints)
+        
         feedback_color = CONFIG_DESENHO['cores_feedback'].get(analyzer.feedback_type, (255, 255, 255))
 
-        # Exibe as informações na tela.
         cv2.putText(frame, f"Exercicio: {analyzer.exercise_name}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.putText(frame, f"Reps: {analyzer.counter}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.putText(frame, "Feedback:", (10, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.9, feedback_color, 2, cv2.LINE_AA)
         
-        # Quebra o feedback em múltiplas linhas se for muito longo.
         y0, dy = 180, 25
         for i, line in enumerate(analyzer.feedback.split('\n')):
             y = y0 + i * dy
             cv2.putText(frame, line, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, feedback_color, 2, cv2.LINE_AA)
 
-
         cv2.imshow('Analise de Postura', frame)
 
-        # Condição de parada: pressionar a tecla 'q'.
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

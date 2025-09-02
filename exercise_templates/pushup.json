@@ -17,8 +17,8 @@
         "message": "Mantenha o corpo reto!",
         "apply_when": "both",
         "zones": {
-          "verde": { "min": 160, "max": 180 },
-          "amarela": { "min": 150, "max": 159.9 }
+          "verde": { "min": 155, "max": 180 },
+          "amarela": { "min": 145, "max": 154.9 }
         }
       }
     ]
