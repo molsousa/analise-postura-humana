@@ -10,6 +10,33 @@ O arquivo *posture_analysis* faz a análise geral dos exercícios, toda a orient
 
 Os demais arquivos são auxiliares ao principal (*posture_analysis*).
 
+## Arquivos fonte
+- ***main.py***
+
+    **Função:** Este é o script que você executa para iniciar a aplicação. Suas principais responsabilidades são:
+
+    - Interpretar os argumentos de linha de comando (qual exercício e qual vídeo/câmera usar).
+
+    - Inicializar todos os objetos principais: PoseDetector, PostureAnalyzer, KalmanSmoother e Relatorio.
+
+    - Abrir a fonte de vídeo e executar o loop principal que processa frame a frame.
+
+    - Coordenar o fluxo de dados em cada frame: detectar -> suavizar -> analisar.
+
+    - Gerenciar toda a parte de visualização, desenhando o esqueleto e os textos de feedback na tela usando OpenCV.
+
+    - Chamar o método de salvar o relatório ao final da sessão.
+
+- ***report.py***
+
+    **Função:** Este arquivo centraliza constantes e configurações usadas em diferentes partes do projeto. Ele define:
+
+    - As cores (em BGR) para cada tipo de feedback (CORRETO, ATENCAO, ERRO_CRITICO).
+
+    - O nome do diretório onde os relatórios de sessão são salvos (ex: logs).
+
+    - Isso permite alterar a aparência e o comportamento da aplicação facilmente, sem precisar modificar o código principal.
+
 ## Como utilizar
 
 É necessário instalar o Python na sua versão 3.11.
