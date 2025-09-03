@@ -77,9 +77,14 @@ def main(exercise_config, video_path=0):
 
         cv2.putText(frame, f"Exercicio: {analyzer.exercise_name}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.putText(frame, f"Reps: {analyzer.counter}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-        cv2.putText(frame, "Feedback:", (10, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.9, feedback_color, 2, cv2.LINE_AA)
         
-        y0, dy = 180, 25
+        # Exibe a posição corporal detectada
+        cv2.putText(frame, f"Posicao: {analyzer.body_orientation}", (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2, cv2.LINE_AA)
+        
+        # Ajusta a posição do feedback para não sobrepor
+        cv2.putText(frame, "Feedback:", (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.9, feedback_color, 2, cv2.LINE_AA)
+        
+        y0, dy = 200, 25
         for i, line in enumerate(analyzer.feedback.split('\n')):
             y = y0 + i * dy
             cv2.putText(frame, line, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.7, feedback_color, 2, cv2.LINE_AA)
