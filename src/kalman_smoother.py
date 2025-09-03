@@ -33,7 +33,7 @@ class KalmanPointSmoother:
         self.filters = {}
         self.visibility_threshold = visibility_threshold
         
-        # --- Mapeamento de pontos simétricos ---
+        # Mapeamento de pontos simétricos
         self.symmetric_pairs = {
             PoseLandmark.LEFT_SHOULDER: PoseLandmark.RIGHT_SHOULDER,
             PoseLandmark.LEFT_ELBOW: PoseLandmark.RIGHT_ELBOW,
@@ -44,7 +44,6 @@ class KalmanPointSmoother:
             PoseLandmark.LEFT_HEEL: PoseLandmark.RIGHT_HEEL,
             PoseLandmark.LEFT_FOOT_INDEX: PoseLandmark.RIGHT_FOOT_INDEX
         }
-        # Adiciona o mapeamento reverso automaticamente
         self.symmetric_pairs.update({v: k for k, v in self.symmetric_pairs.items()})
 
     def smooth(self, points):
@@ -52,8 +51,6 @@ class KalmanPointSmoother:
             return []
 
         smoothed_points = []
-        
-        # Armazena a visibilidade de cada ponto para a lógica de simetria
         visibilities = [p[3] for p in points]
 
         for i, point in enumerate(points):
@@ -63,30 +60,26 @@ class KalmanPointSmoother:
                 self.filters[i] = KalmanPointFilter()
                 self.filters[i].kf.x[:3] = np.array([[px], [py], [pz]])
 
-            # --- LÓGICA DE SIMETRIA APLICADA ANTES DA PREDIÇÃO ---
             if visibility < self.visibility_threshold:
-                # O ponto atual está ocluído, vamos tentar usar seu par simétrico
                 symmetric_partner_idx = self.symmetric_pairs.get(i)
                 
-                if symmetric_partner_idx is not None and visibilities[symmetric_partner_idx] > self.visibility_threshold:
-                    # O par simétrico está visível! Vamos copiar sua velocidade.
+                # Verifica se o par simétrico existe E se seu filtro já foi inicializado
+                if (symmetric_partner_idx is not None and 
+                    symmetric_partner_idx in self.filters and 
+                    visibilities[symmetric_partner_idx] > self.visibility_threshold):
+                    
                     partner_filter = self.filters[symmetric_partner_idx]
                     current_filter = self.filters[i]
                     
-                    # Copia o vetor de velocidade (vx, vy, vz) do par para o filtro atual
                     partner_velocity = partner_filter.kf.x[3:]
                     current_filter.kf.x[3:] = partner_velocity
 
-            # 1. Etapa de PREDIÇÃO: Sempre predizemos o próximo estado
             predicted_pos = self.filters[i].predict()
 
-            # 2. Etapa de ATUALIZAÇÃO: Apenas se a medição for confiável
             if visibility > self.visibility_threshold:
                 self.filters[i].update(point)
                 final_pos = self.filters[i].kf.x[:3].flatten()
             else:
-                # Se o ponto está ocluído, usamos a predição (que agora pode ter sido
-                # influenciada pela velocidade do seu par simétrico).
                 final_pos = predicted_pos
 
             smoothed_points.append((*final_pos, visibility))

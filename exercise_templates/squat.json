@@ -9,22 +9,22 @@
   },
   "rules": {
     "state_change": {
-      "down_angle": 110,
+      "down_angle": 120,
       "up_angle": 160
     },
     "feedback": [
       {
         "angle": "right_knee_flexion",
-        "message": "Profundidade insuficiente. Agache ate a coxa ficar paralela ao chao.",
+        "message": "Profundidade insuficiente. Agache mais.",
         "apply_when": "down",
         "zones": {
-          "verde": { "min": 110, "max": 150 },
-          "amarela": { "min": 90, "max": 109.9 }
+          "verde": { "min": 70, "max": 120 },
+          "amarela": { "min": 120.1, "max": 140 }
         }
       },
       {
         "angle": "right_ankle_dorsiflexion",
-        "message": "Mobilidade de tornozelo limitada. Mantenha os calcanhares no chao.",
+        "message": "Mantenha os calcanhares no chao.",
         "apply_when": "down",
         "zones": {
           "verde": { "min": 30, "max": 90 },

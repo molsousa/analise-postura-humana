@@ -8,8 +8,8 @@
   },
   "rules": {
     "state_change": {
-      "up_angle": 160,
-      "down_angle": 90
+      "up_angle": 150,
+      "down_angle": 100
     },
     "feedback": [
       {
