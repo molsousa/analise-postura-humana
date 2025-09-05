@@ -1,9 +1,9 @@
 import os
 from datetime import datetime
-from config import CONFIG_RELATORIO
+from config import LOG_CONFIG
 from collections import Counter
 
-class Relatorio:
+class Log:
     """
     Gera um relatório de SESSÃO focado em fornecer insights úteis para o usuário.
     Em vez de um log por frame, ele cria um resumo com estatísticas de repetições
@@ -13,47 +13,47 @@ class Relatorio:
         """
         Inicializa as estruturas de dados para coletar estatísticas da sessão.
         """
-        self.diretorio_logs = CONFIG_RELATORIO['diretorio_logs']
+        self.dir_logs = LOG_CONFIG['dir_logs']
         self.exercise_config = exercise_config
         self.exercise_name = exercise_config['name']
         
         # Estrutura para armazenar as estatísticas
         self.stats = {
             'total_reps': 0,
-            'reps_boas': 0,
-            'reps_invalidas': 0,
-            'erros_cometidos': Counter() # Usamos um Counter para contar a frequência dos erros
+            'ok_reps': 0,
+            'invalid_reps': 0,
+            'errors': Counter() # Usamos um Counter para contar a frequência dos erros
         }
 
         # Gera um nome de arquivo .txt único com data e hora
-        timestamp_arquivo = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.arquivo_relatorio = os.path.join(self.diretorio_logs, f"resumo_{self.exercise_name}_{timestamp_arquivo}.txt")
+        timestamp_file = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.log_file = os.path.join(self.dir_logs, f"resumo_{self.exercise_name}_{timestamp_file}.txt")
         
-        self._criar_diretorio_log()
+        self._make_dir_log()
     
-    def _criar_diretorio_log(self):
+    def _make_dir_log(self):
         """Cria o diretório para salvar o relatório, se ele não existir."""
-        os.makedirs(self.diretorio_logs, exist_ok=True)
+        os.makedirs(self.dir_logs, exist_ok=True)
     
-    def registrar_repeticao(self, foi_boa, erros_da_rep):
+    def save_rep(self, rep_ok, rep_error):
         """
         Registra os dados consolidados de uma única repetição finalizada.
         Este método é chamado pelo PostureAnalyzer ao final de cada rep.
 
         Args:
-            foi_boa (bool): True se a repetição foi executada com boa postura, False caso contrário.
-            erros_da_rep (set): Um conjunto contendo as mensagens de erro que ocorreram na rep.
+            rep_ok (bool): True se a repetição foi executada com boa postura, False caso contrário.
+            rep_error (set): Um conjunto contendo as mensagens de erro que ocorreram na rep.
         """
         self.stats['total_reps'] += 1
-        if foi_boa:
-            self.stats['reps_boas'] += 1
+        if rep_ok:
+            self.stats['ok_reps'] += 1
         else:
-            self.stats['reps_invalidas'] += 1
+            self.stats['invalid_reps'] += 1
             # Atualiza a contagem de cada erro que ocorreu nesta repetição inválida
-            for erro in erros_da_rep:
-                self.stats['erros_cometidos'][erro] += 1
+            for error in rep_error:
+                self.stats['errors'][error] += 1
     
-    def salvar(self):
+    def save(self):
         """Salva o resumo estatístico da sessão em um arquivo de texto legível."""
         if self.stats['total_reps'] == 0:
             print("Nenhuma repetição foi completada para gerar o relatório.")
@@ -69,26 +69,26 @@ class Relatorio:
 
         report_content.append("--- DESEMPENHO GERAL ---")
         report_content.append(f"Total de Repetições: {self.stats['total_reps']}")
-        report_content.append(f"  - Repetições Corretas: {self.stats['reps_boas']}")
-        report_content.append(f"  - Repetições com Erros: {self.stats['reps_invalidas']}")
+        report_content.append(f"  - Repetições Corretas: {self.stats['ok_reps']}")
+        report_content.append(f"  - Repetições com Erros: {self.stats['invalid_reps']}")
         
         try:
-            percentual_sucesso = (self.stats['reps_boas'] / self.stats['total_reps']) * 100
-            report_content.append(f"Taxa de Sucesso na Postura: {percentual_sucesso:.1f}%\n")
+            sucess_percent = (self.stats['ok_reps'] / self.stats['total_reps']) * 100
+            report_content.append(f"Taxa de Sucesso na Postura: {sucess_percent:.1f}%\n")
         except ZeroDivisionError:
             pass
 
-        if self.stats['reps_invalidas'] > 0:
+        if self.stats['invalid_reps'] > 0:
             report_content.append("--- PONTOS PRINCIPAIS PARA MELHORAR ---")
             # Lista os erros do mais comum para o menos comum
-            erros_mais_comuns = self.stats['erros_cometidos'].most_common()
+            common_errors = self.stats['errors'].most_common()
             
-            for i, (erro_msg, contagem) in enumerate(erros_mais_comuns):
-                report_content.append(f"{i+1}. {erro_msg} (Ocorreu em {contagem} repetições)")
+            for i, (error_message, count) in enumerate(common_errors):
+                report_content.append(f"{i+1}. {error_message} (Ocorreu em {count} repetições)")
                 
                 # Encontra o ângulo associado a essa mensagem de erro na configuração
                 for rule in self.exercise_config['rules']['feedback']:
-                    if rule['message'] == erro_msg:
+                    if rule['message'] == error_message:
                         angle_name = rule['angle']
                         joints = self.exercise_config['angle_definitions'][angle_name]
                         joint_names = ', '.join(joints).replace('_', ' ').title()
@@ -96,8 +96,8 @@ class Relatorio:
                         break
         else:
             report_content.append("\n--- EXCELENTE! ---")
-            report_content.append("Você completou todas as repetições com boa postura. Continue assim!")
+            report_content.append("Você completou todas as repetições com boa postura!")
 
         # Escreve o conteúdo no arquivo .txt
-        with open(self.arquivo_relatorio, 'w', encoding='utf-8') as f:
+        with open(self.log_file, 'w', encoding='utf-8') as f:
             f.write("\n".join(report_content))

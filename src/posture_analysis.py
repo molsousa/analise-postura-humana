@@ -136,7 +136,7 @@ class PostureAnalyzer:
             self.qualidade_da_rep_atual = True
             self.erros_na_rep_atual.clear()
         elif self.rep_state == 'down' and main_angle_value > up_threshold:
-            reporter.registrar_repeticao(self.qualidade_da_rep_atual, self.erros_na_rep_atual)
+            reporter.save_rep(self.qualidade_da_rep_atual, self.erros_na_rep_atual)
             self.counter += 1
             self.rep_state = 'up'
             self.rep_complete_feedback_end_time = time.time() + 2

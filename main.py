@@ -6,8 +6,8 @@ import mediapipe as mp
 from src.posture_analysis import PostureAnalyzer
 from src.pose_detector import MediaPipePoseDetector
 from src.kalman_smoother import KalmanPointSmoother
-from src.report import Relatorio
-from config import CONFIG_DESENHO
+from src.report import Log
+from config import COLOR_CONFIG
 
 def draw_smoothed_landmarks(image, landmarks):
     """Desenha os landmarks suavizados (uma lista de tuplas) na imagem."""
@@ -44,7 +44,7 @@ def main(exercise_config, video_path=0):
     with open(exercise_config, 'r', encoding='utf-8') as f:
         config_data = json.load(f)
     
-    reporter = Relatorio(exercise_config=config_data)
+    reporter = Log(exercise_config=config_data)
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -73,7 +73,7 @@ def main(exercise_config, video_path=0):
         if smoothed_keypoints:
              draw_smoothed_landmarks(frame, smoothed_keypoints)
         
-        feedback_color = CONFIG_DESENHO['cores_feedback'].get(analyzer.feedback_type, (255, 255, 255))
+        feedback_color = COLOR_CONFIG['feedback_color'].get(analyzer.feedback_type, (255, 255, 255))
 
         cv2.putText(frame, f"Exercicio: {analyzer.exercise_name}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.putText(frame, f"Reps: {analyzer.counter}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
@@ -96,7 +96,7 @@ def main(exercise_config, video_path=0):
 
     # --- 4. Finalização ---
     print("Salvando resumo da sessão...")
-    reporter.salvar()
+    reporter.save()
     
     cap.release()
     cv2.destroyAllWindows()
