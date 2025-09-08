@@ -20,20 +20,11 @@
     "feedback": [
       {
         "angle": "body_line_angle",
-        "message": "Mantenha o corpo reto!",
-        "apply_when": "both",
+        "message": "Mantenha o corpo reto! Evite levantar ou baixar o quadril.",
+        "apply_when": "HORIZONTAL (FLEXAO)",
         "zones": {
           "verde": { "min": 155, "max": 180 },
-          "amarela": { "min": 145, "max": 154.9 }
-        }
-      },
-      {
-        "angle": "right_arm_torso_angle",
-        "message": "Mantenha os cotovelos mais proximos do corpo!",
-        "apply_when": "both",
-        "zones": {
-          "verde": { "min": 20, "max": 60 },
-          "amarela": { "min": 60.1, "max": 75 }
+          "amarela": { "min": 150, "max": 154.9 }
         }
       }
     ]
