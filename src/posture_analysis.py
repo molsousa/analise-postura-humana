@@ -1,7 +1,7 @@
 import json
 import time
 import numpy as np
-from src.angle_utils import calculate_angle_3d
+from src.angle_utils import calculate_angle_3d, calculate_segment_angle_horizontal
 
 class PostureAnalyzer:
     """
@@ -23,13 +23,11 @@ class PostureAnalyzer:
                 raise ValueError(f"Nome de articulação inválido para o ângulo '{angle_name}'")
             self.angle_definitions.append({'name': angle_name, 'indices': indices})
 
-        # --- LÓGICA DE CONTAGEM DE REPETIÇÕES ---
         self.rep_state = "up"
         self.counter = 0
         self.qualidade_da_rep_atual = True
         self.erros_na_rep_atual = set()
 
-        # --- LÓGICA DE FEEDBACK E ESTADO ---
         self.feedback = "Inicie o exercicio."
         self.feedback_type = "INFO"
         self.rep_complete_feedback_end_time = 0
@@ -56,9 +54,10 @@ class PostureAnalyzer:
             angles[name] = calculate_angle_3d(keypoints, p1_idx, p2_idx, p3_idx)
             visibilities[name] = self._get_keypoint_visibility(keypoints, indices)
 
-        self.body_orientation = self.detect_body_orientation(keypoints)
         main_angle_value, active_angle_name = self._get_active_main_angle(angles, visibilities)
-        posture_feedback, posture_type = self._get_posture_feedback(angles, visibilities, active_angle_name)
+        self.body_orientation = self.detect_general_position(angles, visibilities)
+        
+        posture_feedback, posture_type = self._get_posture_feedback(keypoints, angles, visibilities, active_angle_name)
         
         if self.rep_state == 'down' and posture_type in ['ATENCAO', 'ERRO_CRITICO']:
             self.qualidade_da_rep_atual = False
@@ -74,46 +73,25 @@ class PostureAnalyzer:
             self.feedback_type = posture_type
             
         return angles
+    
+    def detect_general_position(self, angles, visibilities, stand_threshold=142, squat_threshold=110):
+        vis_joelho_dir = visibilities.get('right_knee_flexion', 0)
+        vis_joelho_esq = visibilities.get('left_knee_flexion', 0)
+        
+        side_prefix = 'right_' if vis_joelho_dir >= vis_joelho_esq else 'left_'
+        
+        knee_angle = angles.get(f'{side_prefix}knee_flexion')
+        hip_angle = angles.get(f'{side_prefix}hip_flexion')
 
-    def detect_body_orientation(self, keypoints, vert_threshold=0.6):
-        """
-        Determina se o corpo está em uma posição vertical (em pé) ou horizontal (flexão).
-        Retorna "EM_PE", "HORIZONTAL (FLEXAO)" ou "INDETERMINADO".
-        """
-        if not keypoints: return "INDETERMINADO"
-
-        idx_ombro_esq = self.detector.get_landmark_index('LEFT_SHOULDER')
-        idx_ombro_dir = self.detector.get_landmark_index('RIGHT_SHOULDER')
-        idx_tornozelo_esq = self.detector.get_landmark_index('LEFT_ANKLE')
-        idx_tornozelo_dir = self.detector.get_landmark_index('RIGHT_ANKLE')
+        if knee_angle is None or hip_angle is None:
+            return "INDETERMINADO"
         
-        ombro_esq = np.array(keypoints[idx_ombro_esq][:2]) if keypoints[idx_ombro_esq][3] > 0.5 else None
-        ombro_dir = np.array(keypoints[idx_ombro_dir][:2]) if keypoints[idx_ombro_dir][3] > 0.5 else None
-        tornozelo_esq = np.array(keypoints[idx_tornozelo_esq][:2]) if keypoints[idx_tornozelo_esq][3] > 0.5 else None
-        tornozelo_dir = np.array(keypoints[idx_tornozelo_dir][:2]) if keypoints[idx_tornozelo_dir][3] > 0.5 else None
-        
-        if ombro_esq is not None and ombro_dir is not None: ponto_medio_ombros = (ombro_esq + ombro_dir) / 2
-        elif ombro_esq is not None: ponto_medio_ombros = ombro_esq
-        elif ombro_dir is not None: ponto_medio_ombros = ombro_dir
-        else: return "INDETERMINADO"
-
-        if tornozelo_esq is not None and tornozelo_dir is not None: ponto_medio_tornozelos = (tornozelo_esq + tornozelo_dir) / 2
-        elif tornozelo_esq is not None: ponto_medio_tornozelos = tornozelo_esq
-        elif tornozelo_dir is not None: ponto_medio_tornozelos = tornozelo_dir
-        else: return "INDETERMINADO"
-        
-        delta = ponto_medio_ombros - ponto_medio_tornozelos
-        delta_x = abs(delta[0])
-        delta_y = abs(delta[1])
-
-        if delta_x + delta_y == 0: return "INDETERMINADO"
-        
-        verticality_ratio = delta_y / (delta_x + delta_y)
-        
-        if verticality_ratio > vert_threshold:
-            return "EM_PE"
+        if knee_angle > stand_threshold and hip_angle > stand_threshold:
+            return "EM PE"
+        elif knee_angle < squat_threshold:
+            return "AGACHADO"
         else:
-            return "HORIZONTAL (FLEXAO)"
+            return "EM TRANSICAO"
 
     def _get_active_main_angle(self, angles, visibilities):
         main_angle_base_name = self.config['main_angle']
@@ -136,24 +114,79 @@ class PostureAnalyzer:
             self.qualidade_da_rep_atual = True
             self.erros_na_rep_atual.clear()
         elif self.rep_state == 'down' and main_angle_value > up_threshold:
-            reporter.save_rep(self.qualidade_da_rep_atual, self.erros_na_rep_atual)
             self.counter += 1
+            reporter.save_rep(self.counter, self.qualidade_da_rep_atual, self.erros_na_rep_atual)
             self.rep_state = 'up'
             self.rep_complete_feedback_end_time = time.time() + 2
-
-    def _get_posture_feedback(self, angles, visibilities, active_angle_name):
+    
+    def _get_posture_feedback(self, keypoints, angles, visibilities, active_angle_name):
         active_side_prefix = "right_" if "right_" in active_angle_name else "left_" if "left_" in active_angle_name else ""
+        
         for rule in self.rules['feedback']:
-            angle_to_check_name = rule['angle']
-            if active_side_prefix and ('right_' in angle_to_check_name or 'left_' in angle_to_check_name):
-                inactive_prefix = "left_" if active_side_prefix == "right_" else "right_"
-                angle_to_check_name = rule['angle'].replace(inactive_prefix, active_side_prefix)
-            angle_value = angles.get(angle_to_check_name)
-            angle_vis = visibilities.get(angle_to_check_name, 0)
-            if angle_value is not None and angle_vis > 0.65:
-                verde = rule['zones']['verde']
-                amarela = rule['zones']['amarela']
-                if not (verde['min'] <= angle_value <= verde['max']):
-                    if amarela['min'] <= angle_value <= amarela['max']: return rule['message'], "ATENCAO"
-                    else: return rule['message'], "ERRO_CRITICO"
+            rule_type = rule.get('type', 'zone')
+
+            apply_when = rule.get('apply_when')
+            if apply_when and self.body_orientation != apply_when:
+                continue
+            
+            if rule_type == 'zone':
+                angle_to_check_name = rule['angle']
+                if active_side_prefix and ('right_' in angle_to_check_name or 'left_' in angle_to_check_name):
+                    inactive_prefix = "left_" if active_side_prefix == "right_" else "right_"
+                    angle_to_check_name = rule['angle'].replace(inactive_prefix, active_side_prefix)
+                angle_value = angles.get(angle_to_check_name)
+                angle_vis = visibilities.get(angle_to_check_name, 0)
+                if angle_value is not None and angle_vis > 0.65:
+                    verde = rule['zones']['verde']
+                    if not (verde['min'] <= angle_value <= verde['max']):
+                        if 'amarela' in rule['zones']:
+                            amarela = rule['zones']['amarela']
+                            if amarela['min'] <= angle_value <= amarela['max']: return rule['message'], "ATENCAO"
+                        return rule['message'], "ERRO_CRITICO"
+
+            elif rule_type == 'segment_parallelism':
+                s1_p1_idx = self.detector.get_landmark_index(rule['segment1'][0])
+                s1_p2_idx = self.detector.get_landmark_index(rule['segment1'][1])
+                s2_p1_idx = self.detector.get_landmark_index(rule['segment2'][0])
+                s2_p2_idx = self.detector.get_landmark_index(rule['segment2'][1])
+                angle1 = calculate_segment_angle_horizontal(keypoints, s1_p1_idx, s1_p2_idx)
+                angle2 = calculate_segment_angle_horizontal(keypoints, s2_p1_idx, s2_p2_idx)
+                if angle1 is not None and angle2 is not None:
+                    difference = abs(angle1 - angle2)
+                    if difference > 180: difference = 360 - difference
+                    if abs(difference - 180) < difference: difference = abs(difference-180)
+                    if difference > rule['max_difference']: return rule['message'], "ATENCAO"
+
+            elif rule_type == 'vertical_comparison':
+                lm1_name, lm2_name = rule['landmark1'], rule['landmark2']
+                if active_side_prefix:
+                    lm1_name = lm1_name.replace('right_', active_side_prefix)
+                    lm2_name = lm2_name.replace('right_', active_side_prefix)
+                lm1_idx = self.detector.get_landmark_index(lm1_name)
+                lm2_idx = self.detector.get_landmark_index(lm2_name)
+                vis1 = keypoints[lm1_idx][3]
+                vis2 = keypoints[lm2_idx][3]
+                if vis1 > 0.65 and vis2 > 0.65:
+                    y1 = keypoints[lm1_idx][1]
+                    y2 = keypoints[lm2_idx][1]
+                    if rule['condition'] == 'is_below_or_level':
+                        if y1 < y2:
+                            return rule['message'], "ATENCAO"
+            
+            elif rule_type == 'angle_offset':
+                base_angle_name = rule['base_angle']
+                offset_angle_name = rule['offset_angle']
+                if active_side_prefix:
+                    base_angle_name = base_angle_name.replace('right_', active_side_prefix)
+                    offset_angle_name = offset_angle_name.replace('right_', active_side_prefix)
+                base_angle_val = angles.get(base_angle_name)
+                offset_angle_val = angles.get(offset_angle_name)
+                vis1 = visibilities.get(base_angle_name, 0)
+                vis2 = visibilities.get(offset_angle_name, 0)
+                if base_angle_val is not None and offset_angle_val is not None and vis1 > 0.65 and vis2 > 0.65:
+                    offset = base_angle_val - offset_angle_val
+                    expected = rule['expected_offset_range']
+                    if not (expected['min'] <= offset <= expected['max']):
+                        return rule['message'], "ATENCAO"
+
         return "Postura Correta!", "CORRETO"

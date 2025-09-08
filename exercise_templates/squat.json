@@ -1,35 +1,42 @@
 {
   "name": "Agachamento",
   "main_angle": "right_knee_flexion",
+  "kalman_filter_params": {
+    "R": 10,
+    "Q": 1.0
+  },
+  "landmarks_to_hide": [
+    "LEFT_WRIST", "RIGHT_WRIST",
+    "LEFT_PINKY", "RIGHT_PINKY",
+    "LEFT_INDEX", "RIGHT_INDEX",
+    "LEFT_THUMB", "RIGHT_THUMB"
+  ],
   "angle_definitions": {
     "right_knee_flexion": ["RIGHT_HIP", "RIGHT_KNEE", "RIGHT_ANKLE"],
     "left_knee_flexion": ["LEFT_HIP", "LEFT_KNEE", "LEFT_ANKLE"],
-    "right_ankle_dorsiflexion": ["RIGHT_KNEE", "RIGHT_ANKLE", "RIGHT_FOOT_INDEX"],
-    "left_ankle_dorsiflexion": ["LEFT_KNEE", "LEFT_ANKLE", "LEFT_FOOT_INDEX"]
+    "right_hip_flexion": ["RIGHT_SHOULDER", "RIGHT_HIP", "RIGHT_KNEE"],
+    "left_hip_flexion": ["LEFT_SHOULDER", "LEFT_HIP", "LEFT_KNEE"]
   },
   "rules": {
     "state_change": {
-      "down_angle": 120,
-      "up_angle": 160
+      "down_angle": 130,
+      "up_angle": 142
     },
     "feedback": [
       {
-        "angle": "right_knee_flexion",
-        "message": "Profundidade insuficiente. Agache mais.",
-        "apply_when": "down",
-        "zones": {
-          "verde": { "min": 70, "max": 120 },
-          "amarela": { "min": 120.1, "max": 140 }
-        }
+        "type": "angle_offset",
+        "base_angle": "right_knee_flexion",
+        "offset_angle": "right_hip_flexion",
+        "message": "Profundidade ou coordenacao incorreta.",
+        "apply_when": "AGACHADO",
+        "expected_offset_range": { "min": 15, "max": 50 }
       },
       {
-        "angle": "right_ankle_dorsiflexion",
-        "message": "Mantenha os calcanhares no chao.",
-        "apply_when": "down",
-        "zones": {
-          "verde": { "min": 30, "max": 90 },
-          "amarela": { "min": 20, "max": 29.9 }
-        }
+        "type": "segment_parallelism",
+        "segment1": ["RIGHT_HIP", "RIGHT_SHOULDER"],
+        "segment2": ["RIGHT_ANKLE", "RIGHT_KNEE"],
+        "message": "Desequilibrio tronco-canela.",
+        "max_difference": 30
       }
     ]
   }

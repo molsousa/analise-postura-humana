@@ -42,3 +42,29 @@ def calculate_angle_3d(keypoints, p1_idx, p2_idx, p3_idx):
     angle = np.arccos(np.clip(cosine_angle, -1.0, 1.0))
     
     return np.degrees(angle)
+
+def calculate_segment_angle_horizontal(keypoints, p1_idx, p2_idx):
+    """
+    Calcula o ângulo de um segmento corporal (definido por p1 e p2)
+    em relação a uma linha horizontal. Usa apenas coordenadas 2D (x, y).
+    """
+    if not keypoints or max(p1_idx, p2_idx) >= len(keypoints):
+        return None
+
+    # Extrai as coordenadas 2D (x, y)
+    p1 = np.array(keypoints[p1_idx][:2])
+    p2 = np.array(keypoints[p2_idx][:2])
+    
+    # Cria o vetor do segmento
+    vector = p2 - p1
+    
+    # Usa atan2 para calcular o ângulo em radianos com a horizontal (eixo x)
+    # e converte para graus.
+    angle_rad = np.arctan2(vector[1], vector[0])
+    angle_deg = np.degrees(angle_rad)
+    
+    # Normaliza o ângulo para que seja sempre positivo
+    if angle_deg < 0:
+        angle_deg += 360
+        
+    return angle_deg

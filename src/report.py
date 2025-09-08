@@ -5,9 +5,8 @@ from collections import Counter
 
 class Log:
     """
-    Gera um relatório de SESSÃO focado em fornecer insights úteis para o usuário.
-    Em vez de um log por frame, ele cria um resumo com estatísticas de repetições
-    e os erros de postura mais comuns.
+    Gera um relatório de SESSÃO focado em fornecer insights úteis para o usuário,
+    incluindo em quais repetições específicas os erros ocorreram.
     """
     def __init__(self, exercise_config):
         """
@@ -17,15 +16,13 @@ class Log:
         self.exercise_config = exercise_config
         self.exercise_name = exercise_config['name']
         
-        # Estrutura para armazenar as estatísticas
         self.stats = {
             'total_reps': 0,
             'ok_reps': 0,
             'invalid_reps': 0,
-            'errors': Counter() # Usamos um Counter para contar a frequência dos erros
+            'errors': {}
         }
 
-        # Gera um nome de arquivo .txt único com data e hora
         timestamp_file = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.log_file = os.path.join(self.dir_logs, f"resumo_{self.exercise_name}_{timestamp_file}.txt")
         
@@ -35,7 +32,7 @@ class Log:
         """Cria o diretório para salvar o relatório, se ele não existir."""
         os.makedirs(self.dir_logs, exist_ok=True)
     
-    def save_rep(self, rep_ok, rep_error):
+    def save_rep(self, rep_num, rep_ok, rep_error):
         """
         Registra os dados consolidados de uma única repetição finalizada.
         Este método é chamado pelo PostureAnalyzer ao final de cada rep.
@@ -49,9 +46,12 @@ class Log:
             self.stats['ok_reps'] += 1
         else:
             self.stats['invalid_reps'] += 1
-            # Atualiza a contagem de cada erro que ocorreu nesta repetição inválida
             for error in rep_error:
-                self.stats['errors'][error] += 1
+                if error not in self.stats['errors']:
+                    self.stats['errors'][error] = {'count': 0, 'reps': []}
+                
+                self.stats['errors'][error]['count'] += 1
+                self.stats['errors'][error]['reps'].append(rep_num)
     
     def save(self):
         """Salva o resumo estatístico da sessão em um arquivo de texto legível."""
@@ -59,7 +59,6 @@ class Log:
             print("Nenhuma repetição foi completada para gerar o relatório.")
             return
 
-        # Monta o conteúdo do arquivo de texto
         report_content = []
         report_content.append("="*40)
         report_content.append(f" RESUMO DA SESSÃO DE TREINO")
@@ -80,24 +79,32 @@ class Log:
 
         if self.stats['invalid_reps'] > 0:
             report_content.append("--- PONTOS PRINCIPAIS PARA MELHORAR ---")
-            # Lista os erros do mais comum para o menos comum
-            common_errors = self.stats['errors'].most_common()
             
-            for i, (error_message, count) in enumerate(common_errors):
-                report_content.append(f"{i+1}. {error_message} (Ocorreu em {count} repetições)")
+            sorted_errors = sorted(self.stats['errors'].items(), key=lambda item: item[1]['count'], reverse=True)
+            
+            for i, (error_message, details) in enumerate(sorted_errors):
+                reps_str = ', '.join(map(str, details['reps']))
+                report_content.append(f"{i+1}. {error_message} (Ocorreu {details['count']} vez(es))")
+                report_content.append(f"   -> Nas repetições: {reps_str}")
                 
-                # Encontra o ângulo associado a essa mensagem de erro na configuração
+                # Procura a regra correspondente à mensagem de erro para dar o foco correto
                 for rule in self.exercise_config['rules']['feedback']:
                     if rule['message'] == error_message:
-                        angle_name = rule['angle']
-                        joints = self.exercise_config['angle_definitions'][angle_name]
-                        joint_names = ', '.join(joints).replace('_', ' ').title()
-                        report_content.append(f"   -> Foco: Alinhamento entre {joint_names}")
-                        break
+                        # Verifica se é uma regra de 'zona' (que tem a chave 'angle')
+                        if 'angle' in rule:
+                            angle_name = rule['angle']
+                            joints = self.exercise_config['angle_definitions'][angle_name]
+                            joint_names = ', '.join(joints).replace('_', ' ').title()
+                            report_content.append(f"   -> Foco: Alinhamento entre {joint_names}")
+                        # Verifica se é uma regra 'relativa' (que tem 'angle1' e 'angle2')
+                        elif 'angle1' in rule and 'angle2' in rule:
+                            angle1_name = rule['angle1'].replace('_', ' ')
+                            angle2_name = rule['angle2'].replace('_', ' ')
+                            report_content.append(f"   -> Foco: Relacao entre {angle1_name} e {angle2_name}")
+                        break # Encontrou a regra, pode parar de procurar
         else:
             report_content.append("\n--- EXCELENTE! ---")
             report_content.append("Você completou todas as repetições com boa postura!")
 
-        # Escreve o conteúdo no arquivo .txt
         with open(self.log_file, 'w', encoding='utf-8') as f:
             f.write("\n".join(report_content))
