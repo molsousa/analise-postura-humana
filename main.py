@@ -81,6 +81,7 @@ def main(exercise_config, video_path=0):
             smoothed_keypoints = smoother.smooth(raw_keypoints)
             calculated_angles = analyzer.analyze(smoothed_keypoints, frame.shape[:2], reporter)
         else:
+            # Passa None para image_shape quando não há keypoints
             analyzer.analyze([], None, reporter)
 
         # --- 3. Visualização dos Resultados ---
@@ -99,7 +100,6 @@ def main(exercise_config, video_path=0):
                     vertex_point = smoothed_keypoints[vertex_index]
                     text_pos = (int(vertex_point[0] * w) + 10, int(vertex_point[1] * h))
                     
-                    # Cria um rótulo mais curto e único para evitar sobreposição
                     label = angle_name.replace('_', ' ').replace('flexion', '').replace('angle', '')
                     cv2.putText(frame, f"{label.strip()}: {int(angle_value)}", text_pos, 
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1, cv2.LINE_AA)
@@ -108,7 +108,10 @@ def main(exercise_config, video_path=0):
 
         cv2.putText(frame, f"Exercicio: {analyzer.exercise_name}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.putText(frame, f"Reps: {analyzer.counter}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-        cv2.putText(frame, f"Posicao: {analyzer.body_orientation}", (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2, cv2.LINE_AA)
+        
+        # Alterado de "Posicao" para "Fase" e usando a nova variável "movement_phase"
+        cv2.putText(frame, f"Fase: {analyzer.movement_phase}", (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2, cv2.LINE_AA)
+        
         cv2.putText(frame, "Feedback:", (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.9, feedback_color, 2, cv2.LINE_AA)
         
         y0, dy = 200, 25
