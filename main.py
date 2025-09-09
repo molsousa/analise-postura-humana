@@ -10,6 +10,7 @@ from src.report import Log
 from config import COLOR_CONFIG
 
 def draw_smoothed_landmarks(image, landmarks, detector, landmarks_to_hide=None):
+    """Desenha os landmarks suavizados (uma lista de tuplas) na imagem."""
     if landmarks_to_hide is None:
         landmarks_to_hide = []
     
@@ -18,6 +19,7 @@ def draw_smoothed_landmarks(image, landmarks, detector, landmarks_to_hide=None):
     connections = mp.solutions.pose.POSE_CONNECTIONS
     h, w, _ = image.shape
     pixel_landmarks = []
+
     for i, lm in enumerate(landmarks):
         if i in hide_index or lm[3] < 0.1:
             pixel_landmarks.append(None)
@@ -39,6 +41,9 @@ def draw_smoothed_landmarks(image, landmarks, detector, landmarks_to_hide=None):
             cv2.circle(image, point, 5, (0, 0, 255), -1)
 
 def main(exercise_config, video_path=0):
+    """
+    Função principal para executar a análise de postura em tempo real.
+    """
     # --- MODO DE DEPURACAO ---
     DEBUG_MODE = True
     
@@ -81,7 +86,6 @@ def main(exercise_config, video_path=0):
             smoothed_keypoints = smoother.smooth(raw_keypoints)
             calculated_angles = analyzer.analyze(smoothed_keypoints, frame.shape[:2], reporter)
         else:
-            # Passa None para image_shape quando não há keypoints
             analyzer.analyze([], None, reporter)
 
         # --- 3. Visualização dos Resultados ---
@@ -96,7 +100,7 @@ def main(exercise_config, video_path=0):
                 angle_value = calculated_angles.get(angle_name)
                 
                 if angle_value is not None:
-                    vertex_index = angle_def['indices'][1]
+                    vertex_index = angle_def['index'][1]
                     vertex_point = smoothed_keypoints[vertex_index]
                     text_pos = (int(vertex_point[0] * w) + 10, int(vertex_point[1] * h))
                     
@@ -108,10 +112,7 @@ def main(exercise_config, video_path=0):
 
         cv2.putText(frame, f"Exercicio: {analyzer.exercise_name}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.putText(frame, f"Reps: {analyzer.counter}", (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
-        
-        # Alterado de "Posicao" para "Fase" e usando a nova variável "movement_phase"
         cv2.putText(frame, f"Fase: {analyzer.movement_phase}", (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2, cv2.LINE_AA)
-        
         cv2.putText(frame, "Feedback:", (10, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.9, feedback_color, 2, cv2.LINE_AA)
         
         y0, dy = 200, 25

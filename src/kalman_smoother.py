@@ -110,6 +110,7 @@ class KalmanPointSmoother:
             if visibility > self.visibility_threshold:
                 self.filters[i].update(point)
                 final_pos = self.filters[i].kf.x[:3].flatten()
+                
             else:
                 final_pos = predicted_pos
 

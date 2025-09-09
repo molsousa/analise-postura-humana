@@ -22,6 +22,7 @@ class MediaPipePoseDetector:
         results = self.pose.process(image_rgb)
 
         keypoints = []
+        
         if results.pose_landmarks:
             for landmark in results.pose_landmarks.landmark:
                 keypoints.append((landmark.x, landmark.y, landmark.z, landmark.visibility))

@@ -1,6 +1,6 @@
 {
   "name": "Flexao de Braco",
-  "main_angle": "right_elbow_angle",
+  "main_angle": "left_elbow_angle",
   "kalman_filter_params": {
     "R": 5,
     "Q": 0.1
@@ -23,8 +23,8 @@
         "message": "Mantenha o corpo reto! Evite levantar ou baixar o quadril.",
         "apply_when": "HORIZONTAL (FLEXAO)",
         "zones": {
-          "verde": { "min": 155, "max": 180 },
-          "amarela": { "min": 150, "max": 154.9 }
+          "green": { "min": 155, "max": 180 },
+          "yellow": { "min": 145, "max": 154.9 }
         }
       }
     ]

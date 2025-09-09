@@ -96,6 +96,7 @@ class Log:
                             joints = self.exercise_config['angle_definitions'][angle_name]
                             joint_names = ', '.join(joints).replace('_', ' ').title()
                             report_content.append(f"   -> Foco: Alinhamento entre {joint_names}")
+
                         # Verifica se é uma regra 'relativa' (que tem 'angle1' e 'angle2')
                         elif 'angle1' in rule and 'angle2' in rule:
                             angle1_name = rule['angle1'].replace('_', ' ')
@@ -106,5 +107,6 @@ class Log:
             report_content.append("\n--- EXCELENTE! ---")
             report_content.append("Você completou todas as repetições com boa postura!")
 
+        # Escreve o conteúdo no arquivo .txt
         with open(self.log_file, 'w', encoding='utf-8') as f:
             f.write("\n".join(report_content))
