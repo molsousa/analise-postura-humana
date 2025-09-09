@@ -13,13 +13,13 @@ def draw_smoothed_landmarks(image, landmarks, detector, landmarks_to_hide=None):
     if landmarks_to_hide is None:
         landmarks_to_hide = []
     
-    hide_indices = {detector.get_landmark_index(name) for name in landmarks_to_hide}
+    hide_index = {detector.get_landmark_index(name) for name in landmarks_to_hide}
 
     connections = mp.solutions.pose.POSE_CONNECTIONS
     h, w, _ = image.shape
     pixel_landmarks = []
     for i, lm in enumerate(landmarks):
-        if i in hide_indices or lm[3] < 0.1:
+        if i in hide_index or lm[3] < 0.1:
             pixel_landmarks.append(None)
         else:
             pixel_landmarks.append((int(lm[0] * w), int(lm[1] * h)))
@@ -27,7 +27,7 @@ def draw_smoothed_landmarks(image, landmarks, detector, landmarks_to_hide=None):
     if connections:
         for connection in connections:
             start_idx, end_idx = connection
-            if start_idx in hide_indices or end_idx in hide_indices:
+            if start_idx in hide_index or end_idx in hide_index:
                 continue
             if start_idx < len(pixel_landmarks) and end_idx < len(pixel_landmarks):
                 start_point, end_point = pixel_landmarks[start_idx], pixel_landmarks[end_idx]

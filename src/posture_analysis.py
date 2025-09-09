@@ -25,7 +25,7 @@ class PostureAnalyzer:
 
         self.rep_state = "up"
         self.counter = 0
-        self.qualidade_da_rep_atual = True
+        self.rep_quality = True
         self.erros_na_rep_atual = set()
 
         self.feedback = "Inicie o exercicio."
@@ -49,10 +49,10 @@ class PostureAnalyzer:
         SQUATTED_HIP_MIN, SQUATTED_HIP_MAX = 20, 70   # Mesmo motivo acima
 
         # Determina qual lado do corpo está mais visível para usar como referência
-        vis_joelho_dir = visibilities.get('right_knee_flexion', 0)
-        vis_joelho_esq = visibilities.get('left_knee_flexion', 0)
+        right_knee_vis = visibilities.get('right_knee_flexion', 0)
+        left_knee_vis = visibilities.get('left_knee_flexion', 0)
         
-        if vis_joelho_dir > vis_joelho_esq:
+        if right_knee_vis > left_knee_vis:
             knee_angle = angles.get('right_knee_flexion')
             hip_angle = angles.get('right_hip_flexion')
         else:
@@ -104,7 +104,7 @@ class PostureAnalyzer:
         
         current_phase = self.movement_phase
         if current_phase == 'AGACHADO' and posture_type in ['ATENCAO', 'ERRO_CRITICO']:
-            self.qualidade_da_rep_atual = False
+            self.rep_quality = False
             self.erros_na_rep_atual.add(posture_feedback)
 
         self._update_rep_counter(main_angle_value, reporter)
@@ -122,35 +122,35 @@ class PostureAnalyzer:
         if not keypoints or image_shape is None:
             return "INDETERMINADO"
         h, w = image_shape[:2]
-        idx_ombro_esq = self.detector.get_landmark_index('LEFT_SHOULDER')
-        idx_ombro_dir = self.detector.get_landmark_index('RIGHT_SHOULDER')
-        idx_quadril_esq = self.detector.get_landmark_index('LEFT_HIP')
-        idx_quadril_dir = self.detector.get_landmark_index('RIGHT_HIP')
-        max_idx = max(idx_ombro_esq, idx_ombro_dir, idx_quadril_esq, idx_quadril_dir)
+        left_shoulder_idx = self.detector.get_landmark_index('LEFT_SHOULDER')
+        right_shoulder_idx = self.detector.get_landmark_index('RIGHT_SHOULDER')
+        left_hip_idx = self.detector.get_landmark_index('LEFT_HIP')
+        right_hip_idx = self.detector.get_landmark_index('RIGHT_HIP')
+        max_idx = max(left_shoulder_idx, right_shoulder_idx, left_hip_idx, right_hip_idx)
         if max_idx >= len(keypoints):
              return "INDETERMINADO"
-        pontos = {'ombro_esq': keypoints[idx_ombro_esq] if keypoints[idx_ombro_esq][3] > 0.5 else None,
-                  'ombro_dir': keypoints[idx_ombro_dir] if keypoints[idx_ombro_dir][3] > 0.5 else None,
-                  'quadril_esq': keypoints[idx_quadril_esq] if keypoints[idx_quadril_esq][3] > 0.5 else None,
-                  'quadril_dir': keypoints[idx_quadril_dir] if keypoints[idx_quadril_dir][3] > 0.5 else None}
-        if pontos['ombro_esq'] and pontos['ombro_dir']:
-            ponto_superior = (np.array(pontos['ombro_esq'][:2]) + np.array(pontos['ombro_dir'][:2])) / 2
-        elif pontos['ombro_esq']:
-            ponto_superior = np.array(pontos['ombro_esq'][:2])
-        elif pontos['ombro_dir']:
-            ponto_superior = np.array(pontos['ombro_dir'][:2])
+        joint_points = {'ombro_esq': keypoints[left_shoulder_idx] if keypoints[left_shoulder_idx][3] > 0.5 else None,
+                  'ombro_dir': keypoints[right_shoulder_idx] if keypoints[right_shoulder_idx][3] > 0.5 else None,
+                  'quadril_esq': keypoints[left_hip_idx] if keypoints[left_hip_idx][3] > 0.5 else None,
+                  'quadril_dir': keypoints[right_hip_idx] if keypoints[right_hip_idx][3] > 0.5 else None}
+        if joint_points['ombro_esq'] and joint_points['ombro_dir']:
+            superior_point = (np.array(joint_points['ombro_esq'][:2]) + np.array(joint_points['ombro_dir'][:2])) / 2
+        elif joint_points['ombro_esq']:
+            superior_point = np.array(joint_points['ombro_esq'][:2])
+        elif joint_points['ombro_dir']:
+            superior_point = np.array(joint_points['ombro_dir'][:2])
         else:
             return "INDETERMINADO"
-        if pontos['quadril_esq'] and pontos['quadril_dir']:
-            ponto_inferior = (np.array(pontos['quadril_esq'][:2]) + np.array(pontos['quadril_dir'][:2])) / 2
-        elif pontos['quadril_esq']:
-            ponto_inferior = np.array(pontos['quadril_esq'][:2])
-        elif pontos['quadril_dir']:
-            ponto_inferior = np.array(pontos['quadril_dir'][:2])
+        if joint_points['quadril_esq'] and joint_points['quadril_dir']:
+            inferior_point = (np.array(joint_points['quadril_esq'][:2]) + np.array(joint_points['quadril_dir'][:2])) / 2
+        elif joint_points['quadril_esq']:
+            inferior_point = np.array(joint_points['quadril_esq'][:2])
+        elif joint_points['quadril_dir']:
+            inferior_point = np.array(joint_points['quadril_dir'][:2])
         else:
             return "INDETERMINADO"
-        delta_x = abs(ponto_superior[0] - ponto_inferior[0]) * w
-        delta_y = abs(ponto_superior[1] - ponto_inferior[1]) * h
+        delta_x = abs(superior_point[0] - inferior_point[0]) * w
+        delta_y = abs(superior_point[1] - inferior_point[1]) * h
         if delta_x + delta_y == 0:
             return "INDETERMINADO"
         verticality_ratio = delta_y / (delta_x + delta_y)
@@ -177,11 +177,11 @@ class PostureAnalyzer:
         down_threshold = self.rules['state_change']['down_angle']
         if self.rep_state == 'up' and main_angle_value < down_threshold:
             self.rep_state = 'down'
-            self.qualidade_da_rep_atual = True
+            self.rep_quality = True
             self.erros_na_rep_atual.clear()
         elif self.rep_state == 'down' and main_angle_value > up_threshold:
             self.counter += 1
-            reporter.save_rep(self.counter, self.qualidade_da_rep_atual, self.erros_na_rep_atual)
+            reporter.save_rep(self.counter, self.rep_quality, self.erros_na_rep_atual)
             self.rep_state = 'up'
             self.rep_complete_feedback_end_time = time.time() + 2
     
