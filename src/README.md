@@ -4,7 +4,7 @@ Essa pasta contém todos os arquivos necessários para a lógica de implementaç
 
 ## Arquivos fonte
 
-- ***angle_utils.py***
+- [***angle_utils.py***](https://github.com/molsousa/analise-postura-humana/blob/main/src/angle_utils.py)
 
     **Função:** Utilitário Matemático. 
     
@@ -14,30 +14,30 @@ Essa pasta contém todos os arquivos necessários para a lógica de implementaç
 
     - Vantagem: Isola a matemática vetorial do resto da lógica de análise, mantendo o código mais limpo e organizado.
 
-- ***kalman_smoother.py***
+- [***kalman_smoother.py***](https://github.com/molsousa/analise-postura-humana/blob/main/src/kalman_smoother.py)
 
     **Função:** Filtro Avançado de Pontos-Chave.
     
     - Este é um dos componentes mais importantes para a qualidade da detecção. Ele recebe os pontos-chave brutos do PoseDetector e os aprimora.
 
-    - Suaviza o tremor ("jitter") natural das detecções.
+    - Suaviza o tremor natural das detecções.
 
-    - Estima a posição de pontos-chave que estão obstruídos (invisíveis para a câmera).
+    - Estima a posição de pontos-chave que estão obstruídos.
 
     - Implementa uma heurística de simetria para que membros obstruídos se movam de forma realista junto com seus pares visíveis.
 
     - Aplica amortecimento de velocidade para evitar que pontos obstruídos se "percam" e derivem pela tela.
 
-- ***pose_detector.py***
+- [***pose_detector.py***](https://github.com/molsousa/analise-postura-humana/blob/main/src/pose_detector.py)
 
     **Função:** Encapsulamento do MediaPipe Pose.
     Esta classe funciona como um "wrapper" para a biblioteca MediaPipe Pose. Sua função é isolar toda a lógica de detecção de pose em um único lugar.
 
-    - Recebe uma imagem e retorna a lista de pontos-chave (landmarks) 3D detectados.
+    - Recebe uma imagem e retorna a lista de pontos-chave 3D detectados.
 
     - Vantagem: Se no futuro quisermos trocar o MediaPipe por outro modelo de estimação de pose, apenas este arquivo precisará ser modificado, mantendo o resto do projeto intacto.
 
-- ***posture_analysis.py***
+- [***posture_analysis.py***](https://github.com/molsousa/analise-postura-humana/blob/main/src/posture_analysis.py)
 
     **Função:** Esta é a classe que contém a lógica de negócio principal do projeto.
 
@@ -51,7 +51,7 @@ Essa pasta contém todos os arquivos necessários para a lógica de implementaç
 
     - Coleta os erros de uma repetição e comunicá-los ao Relatorio ao final de cada ciclo.
 
-- ***report.py***
+- [***report.py***](https://github.com/molsousa/analise-postura-humana/blob/main/src/report.py)
 
     **Função:** Gerador de Resumo da Sessão
     
