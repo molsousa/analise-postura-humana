@@ -41,6 +41,132 @@ A implementação do projeto faz parte de uma pesquisa científica desenvolvida 
     - O nome do diretório onde os relatórios de sessão são salvos (ex: logs).
 
     - Isso permite alterar a aparência e o comportamento da aplicação facilmente, sem precisar modificar o código principal.
+ 
+## Exemplos de Uso dos Principais Módulos
+
+Exemplos práticos de como utilizar os principais módulos do projeto para detecção e análise de postura humana.
+
+### 1. Detecção de Pose com MediaPipe
+
+```python
+from src.pose_detector import MediaPipePoseDetector
+import cv2
+
+# Inicializar o detector
+detector = MediaPipePoseDetector()
+
+# Carregar uma imagem para análise
+image = cv2.imread('imagem_exemplo.jpg')
+
+# Detectar pose
+keypoints, pose_landmarks = detector.detect_pose(image)
+
+# Desenhar landmarks na imagem
+detector.draw_landmarks(image, pose_landmarks)
+cv2.imwrite('imagem_landmarks.jpg', image)
+```
+
+### 2. Cálculo de Ângulos Corporais
+
+```python
+from src.angle_utils import calculate_angle_3d
+
+# Exemplo de keypoints detectados (x, y, z, visibilidade)
+keypoints = [
+    (0.1, 0.2, 0.0, 0.99), # ponto 0
+    (0.2, 0.3, 0.0, 0.98), # ponto 1
+    (0.3, 0.4, 0.0, 0.95), # ponto 2
+    # ...
+]
+
+# Calcular ângulo entre três pontos
+angulo = calculate_angle_3d(keypoints, 0, 1, 2)
+print(f"Ângulo entre pontos: {angulo:.2f} graus")
+```
+
+### 3. Suavização dos Pontos-Chave com Filtro de Kalman
+
+```python
+from src.kalman_smoother import KalmanPointFilter
+
+# Inicializar filtro para um ponto (ex: joelho direito)
+filtro = KalmanPointFilter(landmark_index=14, R=10, Q=1.0) # índice conforme MediaPipe
+
+# Atualizar filtro com observação do frame atual
+filtro.update(keypoints[14])
+
+# Prever próxima posição suavizada
+ponto_suavizado = filtro.predict()
+print("Ponto suavizado:", ponto_suavizado)
+```
+
+### 4. Análise de Postura e Contagem de Repetições
+
+```python
+from src.posture_analysis import PostureAnalyzer
+from src.pose_detector import MediaPipePoseDetector
+
+# Inicializar detector e analisador
+detector = MediaPipePoseDetector()
+analyzer = PostureAnalyzer('exercise_templates/squat.json', detector)
+
+# Exemplo de fluxo: receber keypoints de um frame de vídeo
+keypoints, _ = detector.detect_pose(image)
+
+# Analisar postura
+# (No uso real, chamar métodos próprios do PostureAnalyzer para processamento do exercício)
+# O método principal é processar os keypoints frame a frame e atualizar estados de repetição e feedback.
+```
+
+### 5. Geração de Relatório de Sessão
+
+```python
+from src.report import Log
+
+# Inicializar relatório
+config = {
+    'name': 'Agachamento'
+}
+log = Log(exercise_config=config)
+
+# Salvar dados de uma repetição
+rep_num = 1
+rep_ok = True
+rep_errors = set()
+log.save_rep(rep_num, rep_ok, rep_errors)
+
+# Gerar arquivo resumo
+log.save()
+```
+
+### 6. Utilizando Templates de Exercícios
+
+Os arquivos `.json` em `exercise_templates/` definem regras e ângulos para cada exercício.  
+Exemplo de como criar um novo template:
+
+```json
+{
+  "name": "Novo Exercício",
+  "main_angle": "algum_angulo",
+  "angle_definitions": {
+    "algum_angulo": ["PONTO1", "PONTO2", "PONTO3"]
+  },
+  "rules": {
+    // ... regras específicas
+  }
+}
+```
+
+Inicie o `PostureAnalyzer` com o caminho do novo template para que ele use as regras personalizadas.
+
+---
+
+### Recomendações
+
+- Consulte sempre os README dentro das pastas para entender a lógica de cada módulo.
+- Para adaptar novos exercícios, crie um novo arquivo `.json` com as regras e ângulos desejados.
+- As funções de cada módulo possuem docstrings explicativas; consulte-as para detalhes de parâmetros e retornos.
+
 
 ## Como utilizar
 
