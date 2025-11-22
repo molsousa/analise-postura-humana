@@ -2,6 +2,7 @@ import cv2
 import json
 import mediapipe as mp
 import numpy as np
+
 from src.posture_analysis import PostureAnalyzer
 from src.pose_detector import MediaPipePoseDetector
 from src.kalman_smoother import KalmanPointSmoother

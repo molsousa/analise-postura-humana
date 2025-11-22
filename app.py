@@ -1,5 +1,5 @@
 from flask import Flask, render_template, Response, jsonify
-from camera_manager import CameraManager
+from src.camera_manager import CameraManager
 
 app = Flask(__name__)
 
