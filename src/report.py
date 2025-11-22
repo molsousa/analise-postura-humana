@@ -110,3 +110,40 @@ class Log:
         # Escreve o conteúdo no arquivo .txt
         with open(self.log_file, 'w', encoding='utf-8') as f:
             f.write("\n".join(report_content))
+            
+    def get_report_content(self):
+        """
+        Gera e retorna o conteúdo do relatório como uma string formatada,
+        sem salvar no arquivo (útil para exibição web em tempo real).
+        """
+        report_content = []
+        report_content.append("="*40)
+        report_content.append(f" RESUMO DA SESSÃO DE TREINO")
+        report_content.append("="*40)
+        report_content.append(f"Exercício: {self.exercise_name}")
+        report_content.append(f"Data e Hora: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}\n")
+
+        report_content.append("--- DESEMPENHO GERAL ---")
+        report_content.append(f"Total de Repetições: {self.stats['total_reps']}")
+        report_content.append(f"  - Repetições Corretas: {self.stats['ok_reps']}")
+        report_content.append(f"  - Repetições com Erros: {self.stats['invalid_reps']}")
+        
+        try:
+            sucess_percent = (self.stats['ok_reps'] / self.stats['total_reps']) * 100
+            report_content.append(f"Taxa de Sucesso na Postura: {sucess_percent:.1f}%\n")
+        except ZeroDivisionError:
+            report_content.append(f"Taxa de Sucesso na Postura: 0.0%\n")
+
+        if self.stats['invalid_reps'] > 0:
+            report_content.append("--- PONTOS PRINCIPAIS PARA MELHORAR ---")
+            sorted_errors = sorted(self.stats['errors'].items(), key=lambda item: item[1]['count'], reverse=True)
+            for i, (error_message, details) in enumerate(sorted_errors):
+                report_content.append(f"{i+1}. {error_message} (Ocorreu {details['count']} vez(es))")
+        else:
+            if self.stats['total_reps'] > 0:
+                report_content.append("\n--- EXCELENTE! ---")
+                report_content.append("Você completou todas as repetições com boa postura!")
+            else:
+                report_content.append("\nNenhuma repetição registrada.")
+
+        return "\n".join(report_content)

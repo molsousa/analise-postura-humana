@@ -1,0 +1,164 @@
+/* static/css/style.css */
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #000;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* --- ÁREA SUPERIOR: CONTAGEM E FASE --- */
+.hud-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    z-index: 10;
+}
+
+.counter-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.counter-val {
+    font-size: 3rem;
+    font-weight: bold;
+    line-height: 1;
+    text-shadow: 2px 2px 4px #000;
+}
+
+.counter-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+.phase-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* --- ÁREA CENTRAL: VÍDEO --- */
+.video-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+img#video_stream {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* --- ÁREA INFERIOR: FEEDBACK DE POSTURA --- */
+.hud-footer {
+    height: 100px;
+    background: #1a1a1a;
+    border-top: 3px solid #333;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    z-index: 20;
+    padding: 10px;
+}
+
+.feedback-main {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+    transition: color 0.3s;
+}
+
+.feedback-sub {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+/* Cores Dinâmicas */
+.status-CORRETO {
+    color: #00e676;
+}
+
+/* Verde vibrante */
+.status-ATENCAO {
+    color: #ffea00;
+}
+
+/* Amarelo */
+.status-ERRO_CRITICO {
+    color: #ff1744;
+}
+
+/* Vermelho */
+.status-INFO {
+    color: white;
+}
+
+/* Botão Finalizar */
+.btn-finish {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 30;
+    background: #d50000;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Modal Relatório */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.95);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-box {
+    background: #222;
+    padding: 20px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.btn-close {
+    width: 100%;
+    padding: 15px;
+    background: #444;
+    border: none;
+    color: white;
+    margin-top: 10px;
+    cursor: pointer;
+}

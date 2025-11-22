@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Postura</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <div class="hud-header">
+        <div class="counter-container">
+            <span class="counter-val" id="reps">0</span>
+            <span class="counter-label">Repetições</span>
+        </div>
+        <div class="phase-badge" id="phase">AGUARDANDO</div>
+        
+        <button class="btn-finish" onclick="finishWorkout()">Finalizar</button>
+    </div>
+
+    <div class="video-wrapper">
+        <img id="video_stream" src="{{ url_for('video_feed') }}" alt="Transmissão de Vídeo">
+    </div>
+
+    <div class="hud-footer">
+        <div class="feedback-main status-INFO" id="feedback">Posicione-se...</div>
+        <div class="feedback-sub">Orientação em tempo real</div>
+    </div>
+
+    <div id="reportModal" class="modal">
+        <div class="modal-box">
+            <h2 style="margin-top:0; color:#00e676">Resumo do Treino</h2>
+            <div id="reportText"></div>
+            <button class="btn-close" onclick="window.location.reload()">Novo Treino</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
